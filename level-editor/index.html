@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GUDEV Web Game Level Editor</title>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      #scene {
+        width: 100vw;
+        height: 100vh;
+        background-color: white;
+        position: relative;
+        transform-origin: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .box {
+        position: absolute;
+        transform-origin: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        cursor: move;
+        user-select: none;
+      }
+
+      .controls {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .handle {
+        position: absolute;
+      }
+
+      :root {
+        --handle-size: 10px;
+      }
+
+      .handle-left {
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: var(--handle-size);
+        cursor: ew-resize;
+      }
+
+      .handle-right {
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: var(--handle-size);
+        cursor: ew-resize;
+      }
+
+      .handle-top {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: var(--handle-size);
+        cursor: ns-resize;
+      }
+
+      .handle-bottom {
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: var(--handle-size);
+        cursor: ns-resize;
+      }
+
+      .rotate-handle {
+        width: var(--handle-size);
+        height: var(--handle-size);
+        cursor: grab;
+        position: absolute;
+      }
+
+      .rotate-handle-tl {
+        top: 0;
+        left: 0;
+      }
+
+      .rotate-handle-tr {
+        top: 0;
+        right: 0;
+      }
+
+      .rotate-handle-bl {
+        bottom: 0;
+        left: 0;
+      }
+
+      .rotate-handle-br {
+        bottom: 0;
+        right: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="scene"></div>
+
+    <div class="controls">
+      <button id="add-ground">Add Ground</button>
+      <button id="add-spike">Add Spike</button>
+      <button id="add-spawn">Add Spawn</button>
+      <button id="add-coin">Add Coin</button>
+      <button id="add-goal">Add Goal</button>
+      <button id="save">Save</button>
+      <button id="load">Load</button>
+      <button id="clear">Clear</button>
+    </div>
+
+    <script src="main.js" type="module"></script>
+  </body>
+</html>
