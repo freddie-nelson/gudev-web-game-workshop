@@ -15,20 +15,21 @@ await app.init({
   width: document.body.clientWidth,
   height: document.body.clientHeight,
   resizeTo: document.body,
+  backgroundColor: 0xffffff,
 });
 
 // Part 7: Create matter world
 const engine = Matter.Engine.create({
   gravity: {
     x: 0,
-    y: 0.3,
+    y: 0.1,
   },
 });
 
 // We scale the stage so that we can use 'world' coordinates to position/size objects instead of pixels
 // This will make it much easier when dealing with physics too
-// This essentially says 1 metre in the world is 40 pixels on the screen
-app.stage.scale.set(40);
+// This essentially says 1 metre in the world is 60 pixels on the screen
+app.stage.scale.set(60);
 
 document.body.appendChild(app.canvas);
 
@@ -48,7 +49,7 @@ function createSprite(
   width,
   height,
   color,
-  physicsOptions = { isStatic: false, frictionAir: 0.1, group: 0 }
+  physicsOptions = { isStatic: false, frictionAir: 0.01, group: 0, isSensor: false }
 ) {
   const sprite = new PIXI.Container();
   sprite.position.set(x, y);
@@ -69,6 +70,7 @@ function createSprite(
       collisionFilter: {
         group: physicsOptions.group,
       },
+      isSensor: physicsOptions.isSensor,
     });
     Matter.World.add(engine.world, body);
 
@@ -83,10 +85,11 @@ function createSprite(
 
 // Part 4: Add player sprite (with function)
 // Part 9: Add physics body to player
-const playerSize = 2;
-const playerJumpForce = -2;
+const playerSize = 1;
+const playerJumpForce = -0.5;
+const playerSpeed = 0.2;
 let canDoubleJump = false;
-const [playerSprite, playerBody] = createSprite(0, 0, playerSize, playerSize, 0xff0000);
+const [playerSprite, playerBody] = createSprite(0, 0, playerSize, playerSize, 0x0000ff);
 
 // Part 12: Add jumping
 function isPlayerOnFloor() {
@@ -97,7 +100,7 @@ function isPlayerOnFloor() {
   );
 
   // check if any of the collisions are with a ground body
-  return collisions.some((collision) => collision.bodyA.collisionFilter.group === groundGroup);
+  return collisions.some((collision) => collision.bodyA.collisionFilter.group === groups["ground"]); // change from groundGroup to groups["ground"] for part 13
 }
 
 window.addEventListener("keydown", (e) => {
@@ -116,14 +119,60 @@ window.addEventListener("keydown", (e) => {
 });
 
 // Part 11: Add ground
-const groundWidth = 50;
-const groundHeight = 5;
-const groundGroup = 1;
+// REMOVE ON PART 13
+// const groundWidth = 50;
+// const groundHeight = 5;
+// const groundGroup = 1;
 
-const [groundSprite, groundBody] = createSprite(0, 10, groundWidth, groundHeight, 0x00ff00, {
-  isStatic: true,
-  group: 1,
-});
+// const [groundSprite, groundBody] = createSprite(0, 10, groundWidth, groundHeight, 0x000000, {
+//   isStatic: true,
+//   group: 1,
+// });
+
+// Part 13: Load Levels
+const colors = {
+  ground: 0x000000,
+  spike: 0xff0000,
+  coin: 0xffff00,
+  goal: 0x00ff00,
+  spawn: 0x0000ff,
+};
+
+const groups = {
+  ground: 1,
+  spike: 2,
+  coin: 3,
+  goal: 4,
+};
+
+const physicsOptions = {
+  ground: { isStatic: true, group: groups["ground"] },
+  spike: { isStatic: true, group: groups["spike"] },
+  coin: { isStatic: true, group: groups["coin"], isSensor: true },
+  goal: { isStatic: true, group: groups["goal"], isSensor: true },
+};
+
+function loadLevel(level) {
+  level.forEach((object) => {
+    if (object.type === "spawn") {
+      playerSprite.position.set(object.x, object.y);
+      Matter.Body.setPosition(playerBody, { x: object.x, y: object.y });
+      return;
+    }
+
+    createSprite(
+      object.x,
+      object.y,
+      object.width,
+      object.height,
+      colors[object.type],
+      physicsOptions[object.type]
+    );
+  });
+}
+
+const level = await fetch("level.json").then((response) => response.json());
+loadLevel(level);
 
 // Part 5: Creating our update loop
 function update({ deltaTime }) {
@@ -158,8 +207,6 @@ function update({ deltaTime }) {
     // Important: We need to normalize the direction vector so that moving diagonally is not faster than moving horizontally/vertically
     playerDirection = playerDirection.normalize();
 
-    const playerSpeed = 0.3;
-
     // player.position = player.position.add(playerDirection.multiplyScalar(playerSpeed * deltaTime));
 
     // Part 10: Move the player using physics
@@ -173,6 +220,12 @@ function update({ deltaTime }) {
 
   // Part 7: Create matter world
   Matter.Engine.update(engine); // default delta is 16.666 ms, it's usually a good idea to keep the physics engine running at a fixed time step
+
+  // Part 14: Camera follows player
+  const cameraSpeed = 0.05;
+  app.stage.pivot = app.stage.pivot.add(
+    playerSprite.position.subtract(app.stage.pivot).multiplyScalar(cameraSpeed)
+  );
 }
 
 app.ticker.add(update);
