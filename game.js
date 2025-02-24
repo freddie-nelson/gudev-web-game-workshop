@@ -49,7 +49,8 @@ function createSprite(
   width,
   height,
   color,
-  physicsOptions = { isStatic: false, frictionAir: 0.01, group: 0, isSensor: false }
+  physicsOptions = { isStatic: false, frictionAir: 0.01, group: 0, isSensor: false },
+  angle = 0
 ) {
   const sprite = new PIXI.Container();
   sprite.position.set(x, y);
@@ -72,6 +73,8 @@ function createSprite(
       },
       isSensor: physicsOptions.isSensor,
     });
+    Matter.Body.setAngle(body, angle);
+
     Matter.World.add(engine.world, body);
 
     Matter.Events.on(engine, "beforeUpdate", () => {
@@ -152,7 +155,27 @@ const physicsOptions = {
   goal: { isStatic: true, group: groups["goal"], isSensor: true },
 };
 
+// Part 18: Load levels from JSON
+let currentLevel = 0;
+const levelCount = 3;
+const levels = [];
+
+for (let i = 0; i < levelCount; i++) {
+  const level = await fetch(`level${i}.json`);
+  levels.push(await level.json());
+}
+
+loadLevel(levels[currentLevel]);
+
 function loadLevel(level) {
+  // PART 16: Add collision detection for goal
+  const winScreen = document.getElementById("win-screen");
+
+  // Part 17: Add collision detection for coin
+  let score = 0;
+  const scoreElement = document.getElementById("score");
+  scoreElement.textContent = `Score: ${score}`;
+
   level.forEach((object) => {
     if (object.type === "spawn") {
       playerSprite.position.set(object.x, object.y);
@@ -160,19 +183,92 @@ function loadLevel(level) {
       return;
     }
 
-    createSprite(
+    const [sprite, body] = createSprite(
       object.x,
       object.y,
       object.width,
       object.height,
       colors[object.type],
-      physicsOptions[object.type]
+      physicsOptions[object.type],
+      object.angle
     );
+
+    // Part 15: Add collision detection for spikes
+    if (object.type === "spike") {
+      Matter.Events.on(engine, "collisionStart", (event) => {
+        const pairs = event.pairs;
+
+        pairs.forEach((pair) => {
+          if (pair.bodyA === body || pair.bodyB === body) {
+            clearLevel();
+            loadLevel(level);
+          }
+        });
+      });
+    }
+
+    // Part 16: Add collision detection for goal
+    if (object.type === "goal") {
+      Matter.Events.on(engine, "collisionStart", (event) => {
+        const pairs = event.pairs;
+
+        pairs.forEach((pair) => {
+          if (pair.bodyA === body || pair.bodyB === body) {
+            currentLevel++;
+
+            if (currentLevel >= levelCount) {
+              winScreen.style.display = "flex";
+
+              // Part 20: Timer
+              document.getElementById("win-screen-time").textContent = `Time: ${Math.floor(
+                performance.now() / 1000
+              )}s`;
+            } else {
+              clearLevel();
+              loadLevel(levels[currentLevel]);
+            }
+          }
+        });
+      });
+    }
+
+    // Part 17: Add collision detection for coin
+    if (object.type === "coin") {
+      Matter.Events.on(engine, "collisionStart", (event) => {
+        const pairs = event.pairs;
+
+        pairs.forEach((pair) => {
+          if (pair.bodyA === body || pair.bodyB === body) {
+            score++;
+            scoreElement.textContent = `Score: ${score}`;
+
+            world.removeChild(sprite);
+            Matter.World.remove(engine.world, body);
+          }
+        });
+      });
+    }
   });
 }
 
-const level = await fetch("level.json").then((response) => response.json());
-loadLevel(level);
+// Part 19: Clear Level
+function clearLevel() {
+  [...world.children].forEach((child) => {
+    if (child === playerSprite) {
+      return;
+    }
+
+    world.removeChild(child);
+  });
+
+  Matter.Composite.allBodies(engine.world).forEach((body) => {
+    if (body === playerBody) {
+      return;
+    }
+
+    Matter.World.remove(engine.world, body);
+  });
+}
 
 // Part 5: Creating our update loop
 function update({ deltaTime }) {
