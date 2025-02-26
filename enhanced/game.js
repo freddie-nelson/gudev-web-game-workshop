@@ -396,7 +396,19 @@ function clearLevel() {
 
     Matter.World.remove(engine.world, body);
   });
+
+  orangePortal = null;
+  orangePortalBody = null;
+  bluePortal = null;
+  bluePortalBody = null;
 }
+
+window.addEventListener("keydown", (e) => {
+  if (e.code === "KeyR") {
+    clearLevel();
+    loadLevel(levels[currentLevel]);
+  }
+});
 
 const mouse = new PIXI.Point();
 window.addEventListener("mousemove", (e) => {
@@ -462,7 +474,7 @@ function createPortal(x, y, angle, normal, color = "blue") {
     collisionFilter: {
       group: 0,
     },
-    isTrigger: true,
+    isSensor: true,
   });
   Matter.World.add(engine.world, body);
 
